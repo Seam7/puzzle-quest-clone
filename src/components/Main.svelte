@@ -6,7 +6,8 @@
 
 	type Position = [number, number];
 	type Selection = Position | [];
-	type Cell = { value: number; key: number };
+	type Cell = { value: number; key: string };
+	type Gem = { cell: Cell; position: Position }
 	type Board = Cell[][];
 
 	const [send, receive] = crossfade({
@@ -29,6 +30,17 @@
 
 	function hasSelection(selected: Position | []): selected is Position {
 		return selected.length > 0;
+	}
+
+	const checkScoringGems = (currentBoard: Board) => {
+		const scoredGems: Gem[] = []
+		currentBoard.forEach((cell, i)=> cell.forEach((value, j)=>{
+			const element = getElementInPosition([i,j], currentBoard) as Cell
+			if(itScores(element, [i,j],currentBoard)) {
+				scoredGems.push({cell: element, position: [i,j]})
+			}
+		}))
+		console.log({scoredGems})
 	}
 
 	const itScores = (element: Cell, currentPos: Position, currentBoard: Board) => {
@@ -63,24 +75,6 @@
 			element.value ===
 				getElementInPosition([currentPos[0], currentPos[1] - 1], currentBoard)?.value;
 
-		if (scoresUp) {
-			console.log('up');
-		}
-		if (scoresDown) {
-			console.log('down');
-		}
-		if (scoresLeft) {
-			console.log('left');
-		}
-		if (scoresRight) {
-			console.log('right');
-		}
-		if (scoresCenterHorizontal) {
-			console.log('center horizontal');
-		}
-		if (scoresCenterVertical) {
-			console.log('center vertical');
-		}
 		return (
 			scoresUp ||
 			scoresDown ||
@@ -97,8 +91,8 @@
 			.map(() => {
 				return Array(8)
 					.fill(null)
-					.map(() => ({ value: Math.round(Math.random() * (7 - 1) + 1), key: uuidv4() }));
-			});
+					.map(() => ({ value: Math.round(Math.random() * (7 - 1) + 1), key: uuidv4() }) as Cell);
+			}) as Board;
 	};
 
 	let positions = randomizePositions();
@@ -128,12 +122,10 @@
 		const currentPosElem = getElementInPosition(currentPos, positions);
 		const newPosElem = getElementInPosition(newPos, positions);
 		if (!currentPosElem || !newPosElem) return;
-		console.log({ currentPosElem, newPosElem });
 		positions[currentPos[0]][currentPos[1]] = newPosElem;
 		positions[newPos[0]][newPos[1]] = currentPosElem;
 
-		itScores(currentPosElem, newPos, positions) ? console.log('scored') : console.log('not scored');
-		itScores(newPosElem, currentPos, positions) ? console.log('scored') : console.log('not scored');
+		checkScoringGems(positions)
 		selected = [];
 	};
 
