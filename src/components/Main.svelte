@@ -7,8 +7,12 @@
 	type Position = [number, number];
 	type Selection = Position | [];
 	type Cell = { value: number; key: string };
-	type Gem = { cell: Cell; position: Position }
+	type Gem = { cell: Cell; position: Position };
 	type Board = Cell[][];
+
+	let scoringGems: Gem[] = [];
+
+	$: scoringGems && addManaToPlayer();
 
 	const [send, receive] = crossfade({
 		duration: 400,
@@ -33,14 +37,30 @@
 	}
 
 	const checkScoringGems = (currentBoard: Board) => {
-		const scoredGems: Gem[] = []
-		currentBoard.forEach((cell, i)=> cell.forEach((value, j)=>{
-			const element = getElementInPosition([i,j], currentBoard) as Cell
-			if(itScores(element, [i,j],currentBoard)) {
-				scoredGems.push({cell: element, position: [i,j]})
-			}
-		}))
-		console.log({scoredGems})
+		const scoredGems: Gem[] = [];
+		currentBoard.forEach((cell, i) =>
+			cell.forEach((value, j) => {
+				const element = getElementInPosition([i, j], currentBoard) as Cell;
+				if (itScores(element, [i, j], currentBoard)) {
+					scoredGems.push({ cell: element, position: [i, j] });
+				}
+			})
+		);
+		scoringGems = scoredGems;
+	};
+
+	function addManaToPlayer() {
+		console.log({ scoringGems });
+		if (scoringGems.length === 0) {
+			return;
+		}
+
+		scoringGems.forEach((gem) => {
+			console.log(gem);
+			const [row, col] = gem.position;
+			board[row][col] = { value: 0, key: uuidv4() };
+			// Update board by making the upper gems fall down to new position (check each col position for a 0 and replace with upper one. If no upper one, create)
+		});
 	}
 
 	const itScores = (element: Cell, currentPos: Position, currentBoard: Board) => {
@@ -91,11 +111,11 @@
 			.map(() => {
 				return Array(8)
 					.fill(null)
-					.map(() => ({ value: Math.round(Math.random() * (7 - 1) + 1), key: uuidv4() }) as Cell);
+					.map(() => ({ value: Math.round(Math.random() * (7 - 1) + 1), key: uuidv4() } as Cell));
 			}) as Board;
 	};
 
-	let positions = randomizePositions();
+	let board = randomizePositions();
 	let selected: Selection = [];
 
 	const getElementInPosition = (position: Position, board: Board) => {
@@ -119,13 +139,13 @@
 	};
 
 	const swap = (currentPos: Position, newPos: Position) => {
-		const currentPosElem = getElementInPosition(currentPos, positions);
-		const newPosElem = getElementInPosition(newPos, positions);
+		const currentPosElem = getElementInPosition(currentPos, board);
+		const newPosElem = getElementInPosition(newPos, board);
 		if (!currentPosElem || !newPosElem) return;
-		positions[currentPos[0]][currentPos[1]] = newPosElem;
-		positions[newPos[0]][newPos[1]] = currentPosElem;
+		board[currentPos[0]][currentPos[1]] = newPosElem;
+		board[newPos[0]][newPos[1]] = currentPosElem;
 
-		checkScoringGems(positions)
+		checkScoringGems(board);
 		selected = [];
 	};
 
@@ -140,7 +160,7 @@
 	};
 
 	const handleRandomize = () => {
-		positions = randomizePositions();
+		board = randomizePositions();
 	};
 
 	const handleClickOutside = () => {
@@ -149,6 +169,8 @@
 
 	const getCellTypeClass = (cell: number) => {
 		switch (cell) {
+			case 0:
+				return 'cell';
 			case 1:
 				return 'cell cell-water';
 			case 2:
@@ -174,9 +196,10 @@
 	<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
 	<button on:click={handleRandomize}>Random</button>
 	<div>
-		{#each positions as row, i}
+		{#each board as row, i}
 			<div class="row">
 				{#each row as cell, j (cell.key)}
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<div
 						class={selected[0] === i && selected[1] === j
 							? 'cell-container selected'
